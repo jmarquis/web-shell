@@ -11,6 +11,7 @@ I'm basically using this as a replacement for the incredibly awesome [Codekit](h
 ## What's included
 
 * a simple directory structure
+* a barebones `index.html`
 * a simple Gulpfile
 * essential npm dependencies
 	* [gulp](http://gulpjs.com) (with essential plugins)

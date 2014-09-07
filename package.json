@@ -16,7 +16,7 @@
     "moment": "~2.8.1"
   },
   "dependencies": {
-    "express": "~4.7.2",
+    "express": "^4.7.4",
     "gulp": "~3.8.6"
   }
 }
