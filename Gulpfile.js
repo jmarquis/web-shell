@@ -1,4 +1,6 @@
 var pkg = require("./package.json"),
+	scripts = require("./scripts.json"),
+	styles = require("./styles.json"),
 	gulp = require("gulp"),
 	rimraf = require("gulp-rimraf"),
 	concat = require("gulp-concat"),
@@ -6,97 +8,25 @@ var pkg = require("./package.json"),
 	moment = require("moment"),
 	less = require("gulp-less"),
 	minifyCss = require("gulp-minify-css"),
-	ngAnnotate = require("gulp-ng-annotate");
 	uglify = require("gulp-uglify"),
 	express = require("express"),
-	livereload = require("gulp-livereload"),
-	karma = require("karma").server;
-
-
-var tdd = false;
+	livereload = require("gulp-livereload");
 
 
 gulp.task("clean", function () {
 
 	return gulp.src([
-		"./build/",
-		"./dist/",
-		"./temp-scripts/"
+		"./scripts/site.js",
+		"./styles/site.css"
 	], { read: false })
 		.pipe(rimraf());
 
 });
 
-gulp.task("clean-scripts", function () {
+gulp.task("scripts", function () {
 
-	return gulp.src([
-		"./build/scripts/",
-		"./temp-scripts/"
-	], { read: false })
-		.pipe(rimraf());
-
-});
-
-gulp.task("clean-styles", function () {
-
-	return gulp.src([
-		"./build/styles/"
-	], { read: false })
-		.pipe(rimraf());
-
-});
-
-gulp.task("clean-views", function () {
-
-	return gulp.src("./build/views/", { read: false })
-		.pipe(rimraf());
-
-});
-
-gulp.task("clean-index", function () {
-
-	return gulp.src("./build/index.html", { read: false })
-		.pipe(rimraf());
-
-});
-
-gulp.task("clean-dist", function () {
-
-	return gulp.src("./dist/").pipe(rimraf());
-
-});
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-gulp.task("lib-scripts", ["clean-scripts"], function () {
-
-	return gulp.src([
-		"./bower_components/angular/angular.js",
-		"./bower_components/html5shiv/dist/html5shiv.js"
-	])
-		.pipe(concat("libs.js"))
-		.pipe(gulp.dest("./temp-scripts/"));
-
-});
-
-gulp.task("app-scripts", ["clean-scripts"], function () {
-
-	return gulp.src([
-		"./src/scripts/**/*.js"
-	])
-		.pipe(ngAnnotate())
-		.pipe(concat("app.js"))
-		.pipe(gulp.dest("./temp-scripts/"));
-
-});
-
-gulp.task("scripts", ["clean-scripts", "lib-scripts", "app-scripts"], function () {
-
-	gulp.src([
-		"./temp-scripts/libs.js",
-		"./temp-scripts/app.js"
-	])
-		.pipe(concat("app.js"))
+	gulp.src(scripts)
+		.pipe(concat("site.js"))
 		.pipe(header([
 			"/**",
 			" * ${pkg.name} v${pkg.version}",
@@ -104,17 +34,14 @@ gulp.task("scripts", ["clean-scripts", "lib-scripts", "app-scripts"], function (
 			" */",
 			"", "",
 		].join("\n"), {pkg: pkg}))
-		.pipe(gulp.dest("./build/scripts/"));
+		.pipe(gulp.dest("./scripts/"));
 
 });
 
-gulp.task("styles", ["clean-styles"], function () {
+gulp.task("styles", function () {
 
-	return gulp.src([
-		"./bower_components/normalize-css/normalize.css",
-		"./src/styles/app.less"
-	])
-		.pipe(concat("app.less"))
+	return gulp.src(styles)
+		.pipe(concat("site.less"))
 		.pipe(less())
 		.pipe(header([
 			"/**",
@@ -123,79 +50,28 @@ gulp.task("styles", ["clean-styles"], function () {
 			" */",
 			"", "",
 		].join("\n"), {pkg: pkg}))
-		.pipe(gulp.dest("./build/styles/"));
+		.pipe(gulp.dest("./styles/"));
 
 });
 
-gulp.task("index", ["clean-index"], function () {
+gulp.task("build", ["scripts", "styles"]);
 
-	return gulp.src("./src/index.html")
-		.pipe(gulp.dest("./build/"));
+gulp.task("compress", function () {
 
-});
-
-gulp.task("views", ["clean-views"], function () {
-
-	return gulp.src("./src/views/**/*")
-		.pipe(gulp.dest("./build/views/"));
-
-});
-
-gulp.task("build", ["scripts", "styles", "views", "index"]);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-gulp.task("test", function (done) {
-
-	karma.start({
-		configFile: __dirname + "/test/unit/karma.conf.js",
-		singleRun: true,
-		autoWatch: false
-	}, done);
-
-});
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-gulp.task("package-scripts", ["clean-dist"], function () {
-
-	return gulp.src("./build/scripts/app.js")
-		.pipe(ngAnnotate())
+	gulp.src("./scripts/site.js")
 		.pipe(uglify())
-		.pipe(gulp.dest("./dist/scripts/"));
+		.pipe(gulp.dest("./scripts/"));
 
-});
-
-gulp.task("package-styles", ["clean-dist"], function () {
-
-	return gulp.src("./build/styles/app.css")
+	gulp.src("./styles/site.css")
 		.pipe(minifyCss())
-		.pipe(gulp.dest("./dist/styles/"));
+		.pipe(gulp.dest("./styles/"));
 
 });
-
-gulp.task("package-index", ["clean-dist"], function () {
-
-	return gulp.src("./build/index.html")
-		.pipe(gulp.dest("./dist/"));
-
-});
-
-gulp.task("package-views", ["clean-dist"], function () {
-
-	return gulp.src("./build/views/**/*")
-		.pipe(gulp.dest("./dist/views/"));
-
-});
-
-gulp.task("package", ["package-scripts", "package-styles", "package-index", "package-views"]);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 gulp.task("run", function () {
 
 	var app = express();
-	app.use(express.static(__dirname + "/build"));
+	app.use(express.static(__dirname));
 	app.listen(29017);
 	console.log("Server running on localhost:29017");
 
@@ -204,28 +80,21 @@ gulp.task("run", function () {
 gulp.task("watch", ["build"], function () {
 
 	livereload.listen();
-	gulp.watch("./src/scripts/**/*.js", ["scripts"]);
-	gulp.watch("./src/styles/**/*.less", ["styles"]);
-	gulp.watch("./src/**/*.html", ["index", "views"]);
+
+	gulp.watch(scripts, ["scripts"]);
+	gulp.watch(styles, ["styles"]);
+	gulp.watch(["*.html"], function () {
+		setTimeout(function () {
+			livereload.changed();
+		}, 100)
+	});
+
 	gulp.on("stop", function () {
 		setTimeout(function () {
 			livereload.changed();
-			if (tdd) karma.start({
-				configFile: __dirname + "/test/unit/karma.conf.js",
-				singleRun: true,
-				autoWatch: false
-			}, function () {});
 		}, 100);
 	});
 
 });
-
-gulp.task("tdd", function () {
-
-	tdd = true;
-
-});
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 gulp.task("default", ["build"]);
